@@ -1,0 +1,66 @@
+import sys
+sys.path.append("/Users/tobias/GitHub/biopycourse/data/snake/")
+import plot_distribution
+
+SAMPLES = ['ctl1', 'ctl2']
+
+wdir = "/Users/tobias/GitHub/biopycourse/data/snake"
+
+rule all:
+	input:
+		'plot.png'
+
+rule acounts:
+	input:
+		file='{sample}.fastq'
+	output:
+		'{sample}_a_counts.txt'
+	run:
+		with open(input.file, 'r') as f:
+			nc = [str(l.count('A')) for l in f if not l[0]=='@']
+		data = ', '.join(nc)+'\n'
+		with open(output[0], 'w') as f: f.write(data)
+
+rule gccounts:
+	input:
+		file='{sample}.fastq'
+	output:
+		'{sample}_gc_counts.txt'
+	run:
+		nc_g = []
+		nc_c = []
+		with open(input.file, 'r') as f:
+			for l in f:
+				l=l.strip()
+				if l.isalpha():
+					counted_g = str(l.count('G'))
+					corrected_g = float(counted_g)/float(len(l))
+					nc_g.append(str(corrected_g))
+					counted_c = str(l.count('C'))
+					corrected_c = float(counted_c)/float(len(l))
+					nc_c.append(str(corrected_c))
+		all_matches = nc_g + nc_c
+		#print(all_matches)
+		data = ', '.join(all_matches)+'\n'
+		with open(output[0], 'w') as f: f.write(data)
+
+rule merge:
+	input:
+		counts=expand('{sample}_gc_counts.txt',sample=SAMPLES)
+	output:
+		'merged.txt'
+	shell:
+		"""
+		for f in {input.counts}
+		do
+			cat $f >> {output}
+		done
+		"""
+
+rule plot:
+	input:
+		file='merged.txt'
+	output:
+		output='plot.png'
+	run:
+		plot_distribution.plot_distribution_two_lists(input.file,output.output)

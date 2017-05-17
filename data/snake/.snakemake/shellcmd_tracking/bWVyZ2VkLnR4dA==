@@ -1,0 +1,6 @@
+
+		for f in ctl1_gc_counts.txt ctl2_gc_counts.txt
+		do
+			cat $f >> merged.txt
+		done
+		
